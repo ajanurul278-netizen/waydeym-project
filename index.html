@@ -4,8 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WayDeym ◆ Solidaritas Indonesia</title>
+    
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" href="icon.png" type="image/png">
+    <meta name="theme-color" content="#0f172a">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Base Styles */
+        body { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; background-color: #0f172a; color: white; overflow: hidden; }
+        #map { height: 100vh; width: 100%; z-serif: 1; }
+
+        /* Neon & Glassmorphism */
+        .glass-panel { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0, 242, 254, 0.3); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 242, 254, 0.2); padding: 20px; text-align: center; z-serif: 1000; }
+        .panel-header h3 { margin: 0; font-size: 24px; font-weight: 700; color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); }
+        .panel-header .dot { color: #4facfe; font-size: 28px; }
+        .panel-header .subtitle { margin: 5px 0 15px; font-size: 10px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); letter-spacing: 2px; }
+
+        /* Input & Button */
+        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        input { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 10px; padding: 12px; color: white; font-size: 14px; text-align: center; outline: none; transition: 0.3s; }
+        input:focus { border-color: #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.4); }
+        button { background: linear-gradient(45deg, #4facfe, #00f2fe); border: none; border-radius: 10px; padding: 12px; color: #0f172a; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.3s; width: 100%; box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3); }
+        button:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(0, 242, 254, 0.2); }
+
+        /* Status & Marker */
+        #status { margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+        .neon-marker { color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 1), 0 0 20px rgba(0, 242, 254, 0.8); font-size: 30px !important; }
+    </style>
 </head>
 <body>
 
@@ -30,6 +59,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    
+    <script>
+        // Copy script.js kamu ke sini kalau mau pakai internal JS
+    </script>
 </body>
 </html>
