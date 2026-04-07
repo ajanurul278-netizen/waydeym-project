@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WayDeym ◆ Solidaritas Indonesia</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <div class="glass-panel">
+        <div class="panel-header">
+            <h3>WayDeym<span class="dot">◆</span></h3>
+            <p class="subtitle">INDONESIA SOLIDARITY</p>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Masukkan Nama Anda...">
+            <input type="password" id="pin" placeholder="PIN (4 Digit)">
+        </div>
+
+        <button id="btnStart">Mulai Jejak</button>
+        
+        <div id="status">Siap memantau jejak...</div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+/* Reset & Base */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; }
+
+#map { height: 100vh; width: 100%; z-index: 1; }
+
+/* Glassmorphism Panel */
+.glass-panel {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 20px;
+    z-index: 1000;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+    text-align: center;
+}
+
+.panel-header h3 {
+    letter-spacing: 3px;
+    color: #fff;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin: 0;
+}
+
+.panel-header .dot {
+    color: #b9f2ff;
+    margin-left: 5px;
+    text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff;
+    display: inline-block;
+    animation: diamond-pulse 2s infinite ease-in-out;
+}
+
+.subtitle {
+    font-size: 0.55rem;
+    color: #a5f3ff;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+@keyframes diamond-pulse {
+    0% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0.7; transform: scale(1); }
+}
+
+.input-group { margin-bottom: 15px; }
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    outline: none;
+}
+
+#btnStart {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+}
+
+#btnStart:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5); }
+
+#status { font-size: 0.7rem; color: #94a3b8; margin-top: 10px; }
+
+/* Marker Label Styles */
+.custom-label {
+    background: rgba(13, 25, 48, 0.9) !important;
+    border: 1px solid #00d4ff !important;
+    color: #00d4ff !important;
+    font-weight: bold !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    font-size: 10px !important;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
