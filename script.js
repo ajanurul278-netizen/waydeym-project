@@ -1,72 +1,61 @@
+// GANTI ISI DI DALAM KURUNG KURAWAL INI DENGAN PUNYAMU
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    databaseURL: "YOUR_DATABASE_URL",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAs1oJZ4j54b5ebis8HZwjppktLBzGQhhM",
+    authDomain: "waydeym-project.firebaseapp.com",
+    databaseURL: "https://waydeym-project-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "waydeym-project",
+    storageBucket: "waydeym-project.firebasestorage.app",
+    messagingSenderId: "529560163661",
+    appId: "1:529560163661:web:bc534018a5933775151304"
 };
 
+// Inisialisasi Firebase
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const database = firebase.database();
 
-// Setup Map (CartoDB Dark Matter)
+// Setup Peta
 const map = L.map('map').setView([-6.2000, 106.8166], 13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; WayDeym Solidaritas'
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-let myMarker, otherMarkers = {};
+const markers = {};
 
-function startTracking() {
-    const nama = document.getElementById('username').value;
-    const pin = document.getElementById('pin').value;
+document.getElementById('btnStart').addEventListener('click', () => {
+    const name = document.getElementById('username').value;
+    if (!name) return alert("Isi nama dulu!");
 
-    if (!nama || !pin) return alert("Isi Nama & PIN!");
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
 
-    document.getElementById('status').innerText = "Mencari lokasi Anda...";
-
-    navigator.geolocation.watchPosition(pos => {
-        const { latitude, longitude } = pos.coords;
-        
-        if (!myMarker) {
-            myMarker = L.circleMarker([latitude, longitude], {
-                radius: 10, fillColor: "#00f2fe", color: "#fff", weight: 3, fillOpacity: 1
-            }).addTo(map);
-            map.setView([latitude, longitude], 15);
-        } else {
-            myMarker.setLatLng([latitude, longitude]);
-        }
-
-        myMarker.bindTooltip(nama.toUpperCase() + " ◆ ONLINE", { 
-            permanent: true, direction: 'top', className: 'custom-label' 
-        }).openTooltip();
-
-        db.ref('users/' + nama).set({ lat: latitude, lng: longitude, pin: pin });
-        document.getElementById('status').innerText = "Jejak Aktif - WayDeym";
-    });
-}
-
-// Pantau Teman
-db.ref('users').on('value', snapshot => {
-    const data = snapshot.val();
-    const namaUser = document.getElementById('username').value;
-
-    for (let id in data) {
-        if (id === namaUser) continue;
-        const u = data[id];
-        
-        if (otherMarkers[id]) {
-            otherMarkers[id].setLatLng([u.lat, u.lng]);
-        } else {
-            otherMarkers[id] = L.circleMarker([u.lat, u.lng], {
-                radius: 8, fillColor: "#ff4b2b", color: "#fff", weight: 2, fillOpacity: 1
-            }).addTo(map).bindTooltip(id.toUpperCase() + " ◆ WAYDEYM", { 
-                permanent: true, direction: 'top', className: 'custom-label' 
+            // Kirim ke Firebase
+            database.ref('locations/' + name).set({
+                lat: lat,
+                lng: lng,
+                timestamp: Date.now()
             });
-        }
+
+            map.setView([lat, lng], 15);
+            document.getElementById('status').innerText = "📍 Jejak aktif!";
+        }, null, { enableHighAccuracy: true });
     }
 });
 
-document.getElementById('btnStart').addEventListener('click', startTracking);
+// Baca data orang lain
+database.ref('locations').on('value', (snapshot) => {
+    const data = snapshot.val();
+    for (let id in data) {
+        const info = data[id];
+        if (markers[id]) {
+            markers[id].setLatLng([info.lat, info.lng]);
+        } else {
+            // Marker diamond neon
+            const diamondIcon = L.divIcon({
+                className: 'neon-marker',
+                html: '◆',
+                iconSize: [30, 30]
+            });
+            markers[id] = L.marker([info.lat, info.lng], {icon: diamondIcon}).addTo(map).bindPopup(id);
+        }
+    }
+});
