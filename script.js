@@ -19,73 +19,65 @@ const trails = {};
 let myName = "";
 let myPos = null;
 let isInteracting = false;
-let maxPoints = 20;
+let myHistory = []; // Simpan lokal dulu agar garis cepat muncul
 
-// Deteksi Scroll/Geser Peta
+// Deteksi Interaksi
 map.on('movestart', () => { isInteracting = true; });
 
 // Tombol Fokus
 const btnFocus = document.getElementById('btnFocus');
 btnFocus.onclick = () => {
-    if (myPos) {
-        isInteracting = false;
-        map.flyTo([myPos.lat, myPos.lng], 16);
-    }
+    isInteracting = false;
+    if (myPos) map.flyTo([myPos.lat, myPos.lng], 16);
 };
 
 document.getElementById('btnStart').onclick = function() {
     myName = document.getElementById('username').value.trim();
-    maxPoints = parseInt(document.getElementById('trailLimit').value) || 20;
+    const maxPoints = parseInt(document.getElementById('trailLimit').value) || 20;
 
-    if (!myName) return alert("Masukkan nama!");
+    if (!myName) return alert("Isi nama dulu!");
 
+    // LANGSUNG SEMBUNYIKAN UI (Jangan nunggu GPS)
+    document.getElementById('inputArea').style.display = "none";
+    document.getElementById('subTitle').innerText = "MENUNGGU GPS...";
+    
     if (navigator.geolocation) {
-        document.getElementById('status').innerText = "Mencari Lokasi...";
-
         navigator.geolocation.watchPosition((pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             myPos = { lat, lng };
 
-            // UI LOGIC: Sembunyikan Input, Tampilkan Tombol Fokus
-            document.getElementById('inputArea').style.display = "none";
+            // Update UI setelah GPS dapat
             document.getElementById('subTitle').innerText = "TRACKING: " + myName;
             btnFocus.style.display = "block";
+            document.getElementById('status').innerText = "Sinyal Terkunci ◆";
 
-            // Update Database
-            const userRef = database.ref('locations/' + myName);
-            userRef.once('value').then((snap) => {
-                let history = (snap.val() && snap.val().history) ? snap.val().history : [];
-                history.push({ lat, lng });
+            // Update History Lokal
+            myHistory.push({ lat, lng });
+            if (myHistory.length > maxPoints) myHistory.shift();
 
-                if (history.length > maxPoints) history.shift();
-
-                userRef.set({
-                    lat: lat,
-                    lng: lng,
-                    history: history,
-                    lastActive: Date.now()
-                });
+            // Kirim ke Firebase
+            database.ref('locations/' + myName).set({
+                lat: lat,
+                lng: lng,
+                history: myHistory,
+                lastActive: Date.now()
             });
 
-            // Auto Center jika tidak sedang scroll
-            if (!isInteracting) {
-                map.setView([lat, lng], 16);
-            }
-            document.getElementById('status').innerText = "Lokasi Terkunci ◆";
+            if (!isInteracting) map.setView([lat, lng], 16);
+            
         }, (err) => {
-            alert("Gagal akses GPS: " + err.message);
+            document.getElementById('status').innerText = "GPS Error!";
         }, { enableHighAccuracy: true });
     }
 };
 
-// Monitor Database
+// Pantau Database
 database.ref('locations').on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
     const now = Date.now();
-
     for (let id in data) {
         const info = data[id];
 
@@ -96,7 +88,7 @@ database.ref('locations').on('value', (snapshot) => {
             continue;
         }
 
-        // Marker Update
+        // Marker
         if (markers[id]) {
             markers[id].setLatLng([info.lat, info.lng]);
         } else {
@@ -104,13 +96,18 @@ database.ref('locations').on('value', (snapshot) => {
             markers[id] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map).bindPopup(id);
         }
 
-        // Polyline (Garis Biru) Update
+        // Garis Jejak (Polyline)
         if (info.history && info.history.length > 1) {
             const path = info.history.map(p => [p.lat, p.lng]);
             if (trails[id]) {
                 trails[id].setLatLngs(path);
             } else {
-                trails[id] = L.polyline(path, { color: '#00f2fe', weight: 4, opacity: 0.6 }).addTo(map);
+                trails[id] = L.polyline(path, { 
+                    color: '#00f2fe', 
+                    weight: 5, 
+                    opacity: 0.8,
+                    lineJoin: 'round'
+                }).addTo(map);
             }
         }
     }
