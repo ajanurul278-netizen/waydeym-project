@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>WayDeym ◆ Solidaritas Indonesia</title>
-    
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="icon" href="icon.png" type="image/png">
-    <meta name="theme-color" content="#0f172a">
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,20 +11,23 @@
 
     <div id="map"></div>
 
-    <div class="glass-panel">
+    <button id="btnFocus" class="focus-btn">🎯</button>
+
+    <div class="glass-panel" id="mainPanel">
         <div class="panel-header">
             <h3>WayDeym<span class="dot">◆</span></h3>
-            <p class="subtitle">INDONESIA SOLIDARITY</p>
+            <p id="subTitle" class="subtitle">INDONESIA SOLIDARITY</p>
         </div>
         
-        <div class="input-group">
-            <input type="text" id="username" placeholder="Nama Panggilan..." autocomplete="off">
-            <input type="password" id="pin" placeholder="PIN Keamanan (Opsional)">
+        <div id="inputArea">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="Nama Panggilan..." autocomplete="off">
+                <input type="number" id="trailLimit" placeholder="Panjang Jejak (Misal: 20)" value="20">
+            </div>
+            <button id="btnStart">Mulai Jejak</button>
         </div>
-
-        <button id="btnStart">Mulai Jejak</button>
         
-        <div id="status">Sistem siap. Ketuk tombol untuk mulai.</div>
+        <div id="status">Siap memantau jejak...</div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
