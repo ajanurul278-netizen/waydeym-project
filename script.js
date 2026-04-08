@@ -1,4 +1,3 @@
-// 1. Konfigurasi Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAs1oJZ4j54b5ebis8HZwjppktLBzGQhhM",
     authDomain: "waydeym-project.firebaseapp.com",
@@ -9,76 +8,59 @@ const firebaseConfig = {
     appId: "1:529560163661:web:bc534018a5933775151304"
 };
 
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// --- PENGATURAN PANJANG JEJAK ---
-const MAX_TRAIL_POINTS = 20; // Ubah angka ini sesuai keinginanmu (misal: 5, 20, atau 50)
-// --------------------------------
-
-// 2. Setup Peta
 const map = L.map('map', { zoomControl: false }).setView([-6.2000, 106.8166], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const markers = {};
 const trails = {};
-let myCurrentPos = null;
-let isUserInteracting = false;
+let myName = "";
+let myPos = null;
+let isInteracting = false;
+let maxPoints = 20;
 
-// Deteksi interaksi user
-map.on('movestart', () => { isUserInteracting = true; });
+// Deteksi Scroll/Geser Peta
+map.on('movestart', () => { isInteracting = true; });
 
-// 3. Tombol Fokus ke Lokasi Saya (Floating Button)
-const focusBtn = document.createElement('div');
-focusBtn.innerHTML = '🎯';
-focusBtn.className = 'focus-button'; // Tambahkan gaya di CSS nanti
-focusBtn.style = "position:fixed; top:20px; right:20px; z-index:1001; background:rgba(15,23,42,0.8); padding:12px; border-radius:50%; cursor:pointer; font-size:20px; border:1px solid #00f2fe; display:none;";
-document.body.appendChild(focusBtn);
-
-focusBtn.onclick = () => {
-    if (myCurrentPos) {
-        isUserInteracting = false;
-        map.flyTo([myCurrentPos.lat, myCurrentPos.lng], 17);
+// Tombol Fokus
+const btnFocus = document.getElementById('btnFocus');
+btnFocus.onclick = () => {
+    if (myPos) {
+        isInteracting = false;
+        map.flyTo([myPos.lat, myPos.lng], 16);
     }
 };
 
-// 4. Fungsi Mulai Jejak
-document.getElementById('btnStart').addEventListener('click', function() {
-    const name = document.getElementById('username').value.trim();
-    if (!name) return alert("Isi nama dulu!");
+document.getElementById('btnStart').onclick = function() {
+    myName = document.getElementById('username').value.trim();
+    maxPoints = parseInt(document.getElementById('trailLimit').value) || 20;
+
+    if (!myName) return alert("Masukkan nama!");
 
     if (navigator.geolocation) {
-        document.getElementById('status').innerText = "Menghubungkan...";
-        
+        document.getElementById('status').innerText = "Mencari Lokasi...";
+
         navigator.geolocation.watchPosition((pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            myCurrentPos = { lat, lng };
+            myPos = { lat, lng };
 
-            // Tampilkan tombol fokus setelah mulai
-            focusBtn.style.display = "block";
+            // UI LOGIC: Sembunyikan Input, Tampilkan Tombol Fokus
+            document.getElementById('inputArea').style.display = "none";
+            document.getElementById('subTitle').innerText = "TRACKING: " + myName;
+            btnFocus.style.display = "block";
 
-            // OTOMATIS TUTUP MENU (Sembunyikan elemen input)
-            document.querySelector('.input-group').style.display = "none";
-            document.getElementById('btnStart').style.display = "none";
-            document.querySelector('.panel-header .subtitle').innerText = "JEJAK AKTIF: " + name;
+            // Update Database
+            const userRef = database.ref('locations/' + myName);
+            userRef.once('value').then((snap) => {
+                let history = (snap.val() && snap.val().history) ? snap.val().history : [];
+                history.push({ lat, lng });
 
-            database.ref('locations/' + name).once('value').then((snapshot) => {
-                let history = [];
-                if (snapshot.exists() && snapshot.val().history) {
-                    history = snapshot.val().history;
-                }
+                if (history.length > maxPoints) history.shift();
 
-                history.push({ lat, lng, time: Date.now() });
-
-                // GUNAKAN VARIABEL MAX_TRAIL_POINTS
-                if (history.length > MAX_TRAIL_POINTS) {
-                    history.shift();
-                }
-
-                database.ref('locations/' + name).set({
+                userRef.set({
                     lat: lat,
                     lng: lng,
                     history: history,
@@ -86,58 +68,49 @@ document.getElementById('btnStart').addEventListener('click', function() {
                 });
             });
 
-            if (!isUserInteracting) {
+            // Auto Center jika tidak sedang scroll
+            if (!isInteracting) {
                 map.setView([lat, lng], 16);
             }
-            document.getElementById('status').innerText = "Memantau pergerakan...";
+            document.getElementById('status').innerText = "Lokasi Terkunci ◆";
         }, (err) => {
-            document.getElementById('status').innerText = "GPS Error";
+            alert("Gagal akses GPS: " + err.message);
         }, { enableHighAccuracy: true });
     }
-});
+};
 
-// 5. Pantau Semua User & Jejak
+// Monitor Database
 database.ref('locations').on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
-    const currentTime = Date.now();
+    const now = Date.now();
 
     for (let id in data) {
         const info = data[id];
 
-        // Cleanup jika offline > 15 detik
-        if (currentTime - info.lastActive > 15000) {
+        // Hapus jika tidak aktif 15 detik
+        if (now - info.lastActive > 15000) {
             if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
             if (trails[id]) { map.removeLayer(trails[id]); delete trails[id]; }
             continue;
         }
 
-        // Update Marker
+        // Marker Update
         if (markers[id]) {
             markers[id].setLatLng([info.lat, info.lng]);
         } else {
-            const diamondIcon = L.divIcon({
-                className: 'neon-marker',
-                html: '◆',
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
-            });
-            markers[id] = L.marker([info.lat, info.lng], { icon: diamondIcon }).addTo(map).bindPopup(id);
+            const icon = L.divIcon({ className: 'neon-marker', html: '◆', iconSize: [40, 40], iconAnchor: [20, 20] });
+            markers[id] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map).bindPopup(id);
         }
 
-        // Update Polyline Jejak
+        // Polyline (Garis Biru) Update
         if (info.history && info.history.length > 1) {
-            const points = info.history.map(p => [p.lat, p.lng]);
+            const path = info.history.map(p => [p.lat, p.lng]);
             if (trails[id]) {
-                trails[id].setLatLngs(points);
+                trails[id].setLatLngs(path);
             } else {
-                trails[id] = L.polyline(points, {
-                    color: '#00f2fe',
-                    weight: 3,
-                    opacity: 0.5,
-                    dashArray: '5, 8'
-                }).addTo(map);
+                trails[id] = L.polyline(path, { color: '#00f2fe', weight: 4, opacity: 0.6 }).addTo(map);
             }
         }
     }
