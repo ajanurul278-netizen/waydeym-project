@@ -1,3 +1,4 @@
+// 1. Konfigurasi Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAs1oJZ4j54b5ebis8HZwjppktLBzGQhhM",
     authDomain: "waydeym-project.firebaseapp.com",
@@ -8,9 +9,13 @@ const firebaseConfig = {
     appId: "1:529560163661:web:bc534018a5933775151304"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Inisialisasi Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const database = firebase.database();
 
+// 2. Setup Map
 const map = L.map('map', { zoomControl: false }).setView([-6.2000, 106.8166], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
@@ -19,42 +24,50 @@ const trails = {};
 let myName = "";
 let myPos = null;
 let isInteracting = false;
-let myHistory = []; // Simpan lokal dulu agar garis cepat muncul
+let myHistory = [];
 
-// Deteksi Interaksi
+// Deteksi jika user sedang geser peta manual
 map.on('movestart', () => { isInteracting = true; });
 
-// Tombol Fokus
+// Fungsi Tombol Fokus
 const btnFocus = document.getElementById('btnFocus');
 btnFocus.onclick = () => {
-    isInteracting = false;
-    if (myPos) map.flyTo([myPos.lat, myPos.lng], 16);
+    isInteracting = false; // Aktifkan auto-center lagi
+    if (myPos) {
+        map.flyTo([myPos.lat, myPos.lng], 17);
+    }
 };
 
+// 3. Logika Klik Tombol Start
 document.getElementById('btnStart').onclick = function() {
     myName = document.getElementById('username').value.trim();
     const maxPoints = parseInt(document.getElementById('trailLimit').value) || 20;
 
-    if (!myName) return alert("Isi nama dulu!");
+    if (!myName) {
+        alert("Masukkan nama terlebih dahulu!");
+        return;
+    }
 
-    // LANGSUNG SEMBUNYIKAN UI (Jangan nunggu GPS)
-    document.getElementById('inputArea').style.display = "none";
-    document.getElementById('subTitle').innerText = "MENUNGGU GPS...";
-    
+    // --- PAKSA UI HILANG (POINT UTAMA) ---
+    document.getElementById('inputArea').style.setProperty('display', 'none', 'important');
+    document.getElementById('subTitle').innerText = "TRACKING: " + myName;
+    document.getElementById('status').innerText = "Menunggu Sinyal GPS...";
+    btnFocus.style.display = "block"; // Munculkan tombol 🎯
+
+    // 4. Jalankan Tracking GPS
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition((pos) => {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             myPos = { lat, lng };
 
-            // Update UI setelah GPS dapat
-            document.getElementById('subTitle').innerText = "TRACKING: " + myName;
-            btnFocus.style.display = "block";
-            document.getElementById('status').innerText = "Sinyal Terkunci ◆";
+            document.getElementById('status').innerText = "Jejak Aktif ◆";
 
-            // Update History Lokal
+            // Update Jejak Lokal
             myHistory.push({ lat, lng });
-            if (myHistory.length > maxPoints) myHistory.shift();
+            if (myHistory.length > maxPoints) {
+                myHistory.shift(); // Hapus jejak paling lama (fitur hilang otomatis)
+            }
 
             // Kirim ke Firebase
             database.ref('locations/' + myName).set({
@@ -64,48 +77,62 @@ document.getElementById('btnStart').onclick = function() {
                 lastActive: Date.now()
             });
 
-            if (!isInteracting) map.setView([lat, lng], 16);
+            // Auto-center jika user tidak sedang geser peta
+            if (!isInteracting) {
+                map.setView([lat, lng], 17);
+            }
             
         }, (err) => {
-            document.getElementById('status').innerText = "GPS Error!";
-        }, { enableHighAccuracy: true });
+            document.getElementById('status').innerText = "GPS Bermasalah!";
+        }, { 
+            enableHighAccuracy: true,
+            maximumAge: 1000 
+        });
+    } else {
+        alert("Browser tidak mendukung GPS.");
     }
 };
 
-// Pantau Database
+// 5. Pantau Semua Pengguna di Database
 database.ref('locations').on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
     const now = Date.now();
+
     for (let id in data) {
         const info = data[id];
 
-        // Hapus jika tidak aktif 15 detik
+        // Hapus marker jika user tidak aktif lebih dari 15 detik
         if (now - info.lastActive > 15000) {
             if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
             if (trails[id]) { map.removeLayer(trails[id]); delete trails[id]; }
             continue;
         }
 
-        // Marker
+        // Tampilkan/Update Marker Diamond
         if (markers[id]) {
             markers[id].setLatLng([info.lat, info.lng]);
         } else {
-            const icon = L.divIcon({ className: 'neon-marker', html: '◆', iconSize: [40, 40], iconAnchor: [20, 20] });
-            markers[id] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map).bindPopup(id);
+            const diamondIcon = L.divIcon({ 
+                className: 'neon-marker', 
+                html: '◆', 
+                iconSize: [40, 40], 
+                iconAnchor: [20, 20] 
+            });
+            markers[id] = L.marker([info.lat, info.lng], { icon: diamondIcon }).addTo(map).bindPopup(id);
         }
 
-        // Garis Jejak (Polyline)
+        // Tampilkan/Update Garis Jejak Biru
         if (info.history && info.history.length > 1) {
-            const path = info.history.map(p => [p.lat, p.lng]);
+            const latlngs = info.history.map(p => [p.lat, p.lng]);
             if (trails[id]) {
-                trails[id].setLatLngs(path);
+                trails[id].setLatLngs(latlngs);
             } else {
-                trails[id] = L.polyline(path, { 
-                    color: '#00f2fe', 
-                    weight: 5, 
-                    opacity: 0.8,
+                trails[id] = L.polyline(latlngs, {
+                    color: '#00f2fe',
+                    weight: 5,
+                    opacity: 0.7,
                     lineJoin: 'round'
                 }).addTo(map);
             }
