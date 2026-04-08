@@ -1,85 +1,92 @@
-/* Base Styles */
-body, html { 
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Poppins', sans-serif; 
-    background-color: #0f172a; 
-    color: white; 
-    height: 100%; 
-    width: 100%; 
-    overflow: hidden; 
+// Konfigurasi Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyAs1oJZ4j54b5ebis8HZwjppktLBzGQhhM",
+    authDomain: "waydeym-project.firebaseapp.com",
+    databaseURL: "https://waydeym-project-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "waydeym-project",
+    storageBucket: "waydeym-project.firebasestorage.app",
+    messagingSenderId: "529560163661",
+    appId: "1:529560163661:web:bc534018a5933775151304"
+};
+
+// Inisialisasi Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
 }
+const database = firebase.database();
 
-#map { 
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    z-index: 1; /* Peta di layer bawah */
-}
+// Inisialisasi Peta (Default Jakarta)
+const map = L.map('map', { zoomControl: false }).setView([-6.2000, 106.8166], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
-/* Neon & Glassmorphism */
-.glass-panel { 
-    position: fixed; 
-    bottom: 30px; 
-    left: 50%; 
-    transform: translateX(-50%); 
-    width: 85%; 
-    max-width: 380px; 
-    background: rgba(15, 23, 42, 0.85); 
-    backdrop-filter: blur(12px); 
-    -webkit-backdrop-filter: blur(12px);
-    border-radius: 24px; 
-    border: 1px solid rgba(0, 242, 254, 0.3); 
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6); 
-    padding: 25px; 
-    text-align: center; 
-    z-index: 1000; /* Panel harus di atas peta */
-}
+const markers = {};
 
-.panel-header h3 { margin: 0; font-size: 26px; font-weight: 700; color: #00f2fe; text-shadow: 0 0 10px rgba(0, 242, 254, 0.6); }
-.panel-header .dot { color: #4facfe; font-size: 28px; }
-.panel-header .subtitle { margin: 5px 0 20px; font-size: 10px; text-transform: uppercase; color: rgba(255, 255, 255, 0.6); letter-spacing: 3px; }
+// 1. Fungsi Mengirim Lokasi (Mulai Jejak)
+document.getElementById('btnStart').addEventListener('click', function() {
+    const name = document.getElementById('username').value.trim();
+    if (!name) return alert("Masukkan nama Anda terlebih dahulu!");
 
-/* Input & Button */
-.input-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-input { 
-    background: rgba(255, 255, 255, 0.05); 
-    border: 1px solid rgba(255, 255, 255, 0.1); 
-    border-radius: 12px; 
-    padding: 14px; 
-    color: white; 
-    font-size: 14px; 
-    text-align: center; 
-    outline: none; 
-    transition: 0.3s; 
-}
-input:focus { border-color: #00f2fe; background: rgba(0, 242, 254, 0.05); }
+    if (navigator.geolocation) {
+        document.getElementById('status').innerText = "Menghubungkan ke satelit...";
+        
+        navigator.geolocation.watchPosition((pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
 
-button { 
-    background: linear-gradient(45deg, #4facfe, #00f2fe); 
-    border: none; 
-    border-radius: 12px; 
-    padding: 15px; 
-    color: #0f172a; 
-    font-weight: 800; 
-    font-size: 16px; 
-    cursor: pointer; 
-    transition: 0.3s; 
-    width: 100%; 
-    box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4); 
-}
-button:active { transform: scale(0.96); }
+            // Simpan ke Firebase
+            database.ref('locations/' + name).set({
+                lat: lat,
+                lng: lng,
+                timestamp: Date.now()
+            });
 
-/* Status & Marker */
-#status { margin-top: 15px; font-size: 11px; color: rgba(255, 255, 255, 0.5); font-style: italic; }
+            // Fokuskan peta ke lokasi kita sendiri
+            map.setView([lat, lng], 15);
+            document.getElementById('status').innerText = "Jejak aktif. Memantau lokasi...";
+        }, (err) => {
+            console.error(err);
+            document.getElementById('status').innerText = "Gagal GPS: " + err.message;
+        }, { 
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000 
+        });
+    } else {
+        alert("Browser tidak mendukung GPS.");
+    }
+});
 
-.neon-marker { 
-    color: #00f2fe; 
-    text-shadow: 0 0 10px #00f2fe, 0 0 20px #4facfe; 
-    font-size: 40px !important; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
+// 2. Fungsi Membaca Lokasi Semua User
+database.ref('locations').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if(!data) return;
+
+    for (let id in data) {
+        const info = data[id];
+        
+        // Lewati jika data koordinat tidak valid
+        if (!info.lat || !info.lng) continue;
+
+        if (markers[id]) {
+            // Update posisi jika marker sudah ada
+            markers[id].setLatLng([info.lat, info.lng]);
+        } else {
+            // Buat marker baru jika belum ada
+            const diamondIcon = L.divIcon({
+                className: 'neon-marker',
+                html: '◆',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            markers[id] = L.marker([info.lat, info.lng], {icon: diamondIcon})
+                .addTo(map)
+                .bindPopup("<b>" + id + "</b><br>Aktif");
+            
+            // Geser peta ke marker baru yang muncul
+            map.flyTo([info.lat, info.lng], 15);
+        }
+    }
+});
