@@ -1,38 +1,11 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WayDeym ◆ Solidaritas Indonesia</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+#map {
+    width: 100%;
+    height: 100vh;
+    background-color: grey;
+}
 
-    <div id="map"></div>
-
-    <button id="btnFocus" class="focus-btn">🎯</button>
-
-    <div class="glass-panel" id="mainPanel">
-        <div class="panel-header">
-            <h3>WayDeym<span class="dot">◆</span></h3>
-            <p id="subTitle" class="subtitle">INDONESIA SOLIDARITY</p>
-        </div>
-        
-        <div id="inputArea">
-            <div class="input-group">
-                <input type="text" id="username" placeholder="Nama Panggilan..." autocomplete="off">
-                <input type="number" id="trailLimit" placeholder="Panjang Jejak (Misal: 20)" value="20">
-            </div>
-            <button id="btnStart">Mulai Jejak</button>
-        </div>
-        
-        <div id="status">Siap memantau jejak...</div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
